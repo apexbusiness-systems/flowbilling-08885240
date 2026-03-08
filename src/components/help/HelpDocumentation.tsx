@@ -514,19 +514,19 @@ Response:
                 title: 'Getting Started Tutorial',
                 description: 'Complete walkthrough of setting up your account',
                 duration: '12:34',
-                thumbnail: '/api/placeholder/400/225'
+                thumbnail: ''
               },
               {
                 title: 'Invoice Processing Workflow',
                 description: 'Learn how to process invoices efficiently',
                 duration: '8:45',
-                thumbnail: '/api/placeholder/400/225'
+                thumbnail: ''
               },
               {
                 title: 'Advanced Analytics',
                 description: 'Deep dive into analytics and reporting features',
                 duration: '15:20',
-                thumbnail: '/api/placeholder/400/225'
+                thumbnail: ''
               }
             ].map((video, index) => (
               <Card key={index} className="hover:shadow-lg transition-shadow cursor-pointer">

@@ -68,25 +68,7 @@ const NOVIntegrationStatus = () => {
     }
   };
 
-  // Show sample data if no integrations exist
-  const displayIntegrations = integrations.length > 0 ? integrations.slice(0, 4) : [
-    {
-      id: "sample-nov",
-      integration_name: "NOV AccessNOV",
-      integration_type: "Portal Access",
-      status: "disconnected" as const,
-      last_sync_at: undefined,
-      config: { description: "MYNOV portal integration" }
-    },
-    {
-      id: "sample-oracle",
-      integration_name: "Oracle E-Business Suite",
-      integration_type: "ERP Integration", 
-      status: "disconnected" as const,
-      last_sync_at: undefined,
-      config: { description: "JIB CSV import/export" }
-    }
-  ];
+  const displayIntegrations = integrations.slice(0, 4);
 
   return (
     <div className="card-enterprise">
@@ -127,7 +109,7 @@ const NOVIntegrationStatus = () => {
                     {integration.integration_type}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    {integration.config?.description || 'Integration description'}
+                    {(integration.config as Record<string, string>)?.description || 'Integration description'}
                   </p>
                 </div>
               </div>

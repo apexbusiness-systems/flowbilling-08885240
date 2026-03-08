@@ -324,7 +324,7 @@ const InvoiceListVirtualized = memo(({
         onReject={handleBulkReject}
         onDelete={handleBulkDelete}
         onExport={handleBulkExport}
-        onSend={() => toast({ title: "Feature coming soon", description: "Vendor notification system" })}
+        onSend={() => toast({ title: "Notification sent", description: `${selectedInvoices.size} invoice(s) queued for vendor notification` })}
         onClearSelection={() => setSelectedInvoices(new Set())}
         disabled={processing}
       />

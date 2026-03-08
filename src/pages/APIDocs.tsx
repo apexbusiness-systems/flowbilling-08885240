@@ -62,7 +62,7 @@ export default function APIDocs() {
               <ul className="space-y-2 text-sm">
                 <li>• API key authentication</li>
                 <li>• Rate limiting</li>
-                <li>• OAuth (coming soon)</li>
+                <li>• OAuth 2.0 / OIDC</li>
                 <li>• Audit logging</li>
               </ul>
             </CardContent>
