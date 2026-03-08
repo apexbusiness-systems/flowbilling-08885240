@@ -22,8 +22,10 @@ import { RoleBasedWidgets } from '@/components/dashboard/RoleBasedWidgets';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 export default function Dashboard() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [isSupportMinimized, setIsSupportMinimized] = useState(true);
   const {
@@ -36,14 +38,11 @@ export default function Dashboard() {
     resetLayout,
   } = useDashboardLayout();
 
-  // Memoized callbacks for stable references
   const handleDragEnd = useCallback((result: DropResult) => {
     if (!result.destination) return;
-
     const items = Array.from(visibleWidgets);
     const [reorderedItem] = items.splice(result.source.index, 1);
     items.splice(result.destination.index, 0, reorderedItem);
-
     reorderWidgets(items);
     toast.success('Layout updated');
   }, [visibleWidgets, reorderWidgets]);
@@ -70,9 +69,9 @@ export default function Dashboard() {
       
       <div className="flex items-center justify-between mb-6" data-tour="dashboard-header">
         <div>
-          <h1 className="text-3xl font-bold">Dashboard</h1>
+          <h1 className="text-3xl font-bold">{t('dashboard.title')}</h1>
           <p className="text-muted-foreground mt-1">
-            Customize your view by dragging widgets or configuring visibility
+            {t('dashboard.subtitle')}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -84,7 +83,7 @@ export default function Dashboard() {
             aria-label={isConfigMode ? 'Exit edit mode' : 'Enter edit mode'}
           >
             <Layout className="h-4 w-4 mr-2" aria-hidden="true" />
-            {isConfigMode ? 'Done' : 'Edit Layout'}
+            {isConfigMode ? t('dashboard.done') : t('dashboard.editLayout')}
           </Button>
           <DashboardConfigPanel
             widgets={widgets}
@@ -96,129 +95,72 @@ export default function Dashboard() {
 
       {/* Quick Access Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4 mb-6">
-        <ContextualTooltip
-          id="invoice-management-card"
-          title="Invoice Management"
-          description="Upload, process, and manage invoices. Access the complete invoice processing workflow including upload, validation, matching, and approval."
-          helpArticleId="invoice-workflow"
-          tourId="invoice-workflow"
-          placement="bottom"
-        >
-          <Card 
-            className="cursor-pointer hover:bg-muted/50 transition-colors" 
-            onClick={() => navigate('/invoices')}
-            data-tour="invoice-card"
-          >
+        <ContextualTooltip id="invoice-management-card" title={t('dashboard.invoiceManagement')} description={t('dashboard.invoiceManagementDesc')} helpArticleId="invoice-workflow" tourId="invoice-workflow" placement="bottom">
+          <Card className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => navigate('/invoices')} data-tour="invoice-card">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Invoice Management</CardTitle>
+              <CardTitle className="text-sm font-medium">{t('dashboard.invoiceManagement')}</CardTitle>
               <FileText className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <CardDescription>Upload & process invoices</CardDescription>
+              <CardDescription>{t('dashboard.invoiceManagementDesc')}</CardDescription>
             </CardContent>
           </Card>
         </ContextualTooltip>
-        <ContextualTooltip
-          id="afe-management-card"
-          title="AFE Management"
-          description="Manage Authorization for Expenditure (AFE) budgets and track spending in real-time. Click to view all AFEs and set up budget alerts."
-          helpArticleId="afe-management"
-          tourId="invoice-workflow"
-          placement="bottom"
-        >
-          <Card 
-            className="cursor-pointer hover:bg-muted/50 transition-colors" 
-            onClick={() => navigate('/afe-management')}
-            data-tour="afe-card"
-          >
+
+        <ContextualTooltip id="afe-management-card" title={t('dashboard.afeManagement')} description={t('dashboard.afeManagementDesc')} helpArticleId="afe-management" tourId="invoice-workflow" placement="bottom">
+          <Card className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => navigate('/afe-management')} data-tour="afe-card">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">AFE Management</CardTitle>
+              <CardTitle className="text-sm font-medium">{t('dashboard.afeManagement')}</CardTitle>
               <DollarSign className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <CardDescription>Manage AFEs and track budgets</CardDescription>
+              <CardDescription>{t('dashboard.afeManagementDesc')}</CardDescription>
             </CardContent>
           </Card>
         </ContextualTooltip>
 
-        <ContextualTooltip
-          id="field-tickets-card"
-          title="Field Ticket Verification"
-          description="Verify field tickets and link them to invoices for accurate service tracking. Essential for validating field operations."
-          helpArticleId="field-tickets"
-          tourId="invoice-workflow"
-          placement="bottom"
-        >
-          <Card 
-            className="cursor-pointer hover:bg-muted/50 transition-colors" 
-            onClick={() => navigate('/field-tickets')}
-            data-tour="field-tickets-card"
-          >
+        <ContextualTooltip id="field-tickets-card" title={t('dashboard.fieldTickets')} description={t('dashboard.fieldTicketsDesc')} helpArticleId="field-tickets" tourId="invoice-workflow" placement="bottom">
+          <Card className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => navigate('/field-tickets')} data-tour="field-tickets-card">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Field Tickets</CardTitle>
+              <CardTitle className="text-sm font-medium">{t('dashboard.fieldTickets')}</CardTitle>
               <FileText className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <CardDescription>Verify and link field tickets</CardDescription>
+              <CardDescription>{t('dashboard.fieldTicketsDesc')}</CardDescription>
             </CardContent>
           </Card>
         </ContextualTooltip>
 
-        <ContextualTooltip
-          id="uwi-registry-card"
-          title="UWI Registry"
-          description="Manage Unique Well Identifiers (UWI) to organize invoices by well location. Track production and costs per well."
-          helpArticleId="uwi-management"
-          tourId="invoice-workflow"
-          placement="bottom"
-        >
-          <Card 
-            className="cursor-pointer hover:bg-muted/50 transition-colors" 
-            onClick={() => navigate('/uwi-registry')}
-            data-tour="uwi-card"
-          >
+        <ContextualTooltip id="uwi-registry-card" title={t('dashboard.uwiRegistry')} description={t('dashboard.uwiRegistryDesc')} helpArticleId="uwi-management" tourId="invoice-workflow" placement="bottom">
+          <Card className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => navigate('/uwi-registry')} data-tour="uwi-card">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">UWI Registry</CardTitle>
+              <CardTitle className="text-sm font-medium">{t('dashboard.uwiRegistry')}</CardTitle>
               <MapPin className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <CardDescription>Manage well identifiers</CardDescription>
+              <CardDescription>{t('dashboard.uwiRegistryDesc')}</CardDescription>
             </CardContent>
           </Card>
         </ContextualTooltip>
 
-        <Card 
-          className="cursor-pointer hover:bg-muted/50 transition-colors" 
-          onClick={() => navigate('/reports')}
-        >
+        <Card className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => navigate('/reports')}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Reports & Analytics</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('dashboard.reports')}</CardTitle>
             <BarChart3 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <CardDescription>View comprehensive reports</CardDescription>
+            <CardDescription>{t('dashboard.reportsDesc')}</CardDescription>
           </CardContent>
         </Card>
 
-        <ContextualTooltip
-          id="three-way-matching-card"
-          title="Automated Three-Way Matching"
-          description="Automatically match invoices against purchase orders and field tickets. Reduces manual verification time by up to 80%."
-          helpArticleId="three-way-matching"
-          tourId="invoice-workflow"
-          placement="bottom"
-        >
-          <Card
-            className="cursor-pointer hover:bg-muted/50 transition-colors" 
-            onClick={() => navigate('/three-way-matching')}
-            data-tour="matching-card"
-          >
+        <ContextualTooltip id="three-way-matching-card" title={t('dashboard.threeWayMatching')} description={t('dashboard.threeWayMatchingDesc')} helpArticleId="three-way-matching" tourId="invoice-workflow" placement="bottom">
+          <Card className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => navigate('/three-way-matching')} data-tour="matching-card">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Three-Way Matching</CardTitle>
+              <CardTitle className="text-sm font-medium">{t('dashboard.threeWayMatching')}</CardTitle>
               <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <CardDescription>Automated invoice matching</CardDescription>
+              <CardDescription>{t('dashboard.threeWayMatchingDesc')}</CardDescription>
             </CardContent>
           </Card>
         </ContextualTooltip>
@@ -254,12 +196,7 @@ export default function Dashboard() {
               className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"
             >
               {visibleWidgets.map((widget, index) => (
-                <Draggable
-                  key={widget.id}
-                  draggableId={widget.id}
-                  index={index}
-                  isDragDisabled={!isConfigMode}
-                >
+                <Draggable key={widget.id} draggableId={widget.id} index={index} isDragDisabled={!isConfigMode}>
                   {(provided, snapshot) => (
                     <div
                       ref={provided.innerRef}
@@ -293,11 +230,11 @@ export default function Dashboard() {
       {visibleWidgets.length === 0 && (
         <div className="text-center py-16">
           <Layout className="h-16 w-16 text-muted-foreground mx-auto mb-4" aria-hidden="true" />
-          <h3 className="text-lg font-semibold mb-2">No Widgets Visible</h3>
+          <h3 className="text-lg font-semibold mb-2">{t('dashboard.noWidgets')}</h3>
           <p className="text-muted-foreground mb-4">
-            Enable some widgets to customize your dashboard
+            {t('dashboard.noWidgetsDesc')}
           </p>
-          <Button onClick={resetLayout}>Reset to Default Layout</Button>
+          <Button onClick={resetLayout}>{t('dashboard.resetLayout')}</Button>
         </div>
       )}
 

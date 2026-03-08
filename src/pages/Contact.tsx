@@ -1,6 +1,5 @@
 import { Mail, MessageSquare, Phone, Clock, CheckCircle2 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
-import { Footer } from '@/components/ui/footer';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -10,24 +9,26 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import { BreadcrumbNav } from '@/components/ui/breadcrumb-nav';
 import { SupportChat } from '@/components/support/SupportChat';
+import { useTranslation } from 'react-i18next';
 
 export default function Contact() {
+  const { t } = useTranslation();
   const [submitted, setSubmitted] = useState(false);
   const [isChatMinimized, setIsChatMinimized] = useState(true);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitted(true);
-    toast.success('Thank you! We\'ll be in touch soon.');
+    toast.success(t('contact.thankYou'));
   };
 
   return (
     <div className="min-h-screen flex flex-col">
       <main className="flex-1 container mx-auto px-4 py-12">
         <BreadcrumbNav className="mb-4" />
-        <h1 className="text-4xl font-bold mb-4">Contact</h1>
+        <h1 className="text-4xl font-bold mb-4">{t('contact.title')}</h1>
         <p className="text-xl text-muted-foreground mb-12 max-w-3xl">
-          Get instant support through your preferred channel. CASL-compliant: we only contact you with consent.
+          {t('contact.subtitle')}
         </p>
 
         <Card className="mb-12">
@@ -36,15 +37,15 @@ export default function Contact() {
               <TabsList className="grid w-full grid-cols-3 mb-8">
                 <TabsTrigger value="chat" className="flex items-center gap-2">
                   <MessageSquare className="h-4 w-4" />
-                  AI Chat
+                  {t('contact.aiChat')}
                 </TabsTrigger>
                 <TabsTrigger value="email" className="flex items-center gap-2">
                   <Mail className="h-4 w-4" />
-                  Email
+                  {t('contact.email')}
                 </TabsTrigger>
                 <TabsTrigger value="phone" className="flex items-center gap-2">
                   <Phone className="h-4 w-4" />
-                  Phone
+                  {t('contact.phone')}
                 </TabsTrigger>
               </TabsList>
 
@@ -53,41 +54,31 @@ export default function Contact() {
                   <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-4">
                     <MessageSquare className="h-8 w-8 text-primary" />
                   </div>
-                  <h3 className="text-2xl font-bold mb-2">24/7 AI Support Chat</h3>
+                  <h3 className="text-2xl font-bold mb-2">{t('contact.aiChatTitle')}</h3>
                   <p className="text-muted-foreground mb-4">
-                    Get instant answers to your questions with our AI-powered support assistant
+                    {t('contact.aiChatDesc')}
                   </p>
                   <div className="flex items-center justify-center gap-4 text-sm">
                     <Badge variant="secondary" className="flex items-center gap-1">
                       <Clock className="h-3 w-3" />
-                      Always Available
+                      {t('contact.alwaysAvailable')}
                     </Badge>
                     <Badge variant="secondary" className="flex items-center gap-1">
                       <CheckCircle2 className="h-3 w-3" />
-                      Instant Response
+                      {t('contact.instantResponse')}
                     </Badge>
                   </div>
                 </div>
 
                 <div className="bg-muted/50 rounded-lg p-6 space-y-4">
-                  <h4 className="font-semibold">What our AI can help with:</h4>
+                  <h4 className="font-semibold">{t('contact.aiCanHelp')}</h4>
                   <ul className="space-y-2 text-sm text-muted-foreground">
-                    <li className="flex items-start gap-2">
-                      <CheckCircle2 className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
-                      <span>Product questions and feature guidance</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <CheckCircle2 className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
-                      <span>Technical support and troubleshooting</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <CheckCircle2 className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
-                      <span>Account and billing inquiries</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <CheckCircle2 className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
-                      <span>Onboarding and training assistance</span>
-                    </li>
+                    {[1,2,3,4].map(i => (
+                      <li key={i} className="flex items-start gap-2">
+                        <CheckCircle2 className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
+                        <span>{t(`contact.aiHelp${i}`)}</span>
+                      </li>
+                    ))}
                   </ul>
                 </div>
 
@@ -96,7 +87,7 @@ export default function Contact() {
                   className="w-full"
                   size="lg"
                 >
-                  Start Chat Now
+                  {t('contact.startChatNow')}
                 </Button>
               </TabsContent>
 
@@ -105,14 +96,14 @@ export default function Contact() {
                   <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-4">
                     <Mail className="h-8 w-8 text-primary" />
                   </div>
-                  <h3 className="text-2xl font-bold mb-2">Email Support</h3>
+                  <h3 className="text-2xl font-bold mb-2">{t('contact.emailSupport')}</h3>
                   <p className="text-muted-foreground mb-4">
-                    Reach out to our team via email for detailed inquiries
+                    {t('contact.emailSupportDesc')}
                   </p>
                   <div className="flex items-center justify-center gap-4 text-sm">
                     <Badge variant="secondary" className="flex items-center gap-1">
                       <Clock className="h-3 w-3" />
-                      1 Business Day Response
+                      {t('contact.businessDayResponse')}
                     </Badge>
                   </div>
                 </div>
@@ -121,37 +112,26 @@ export default function Contact() {
                   <Card>
                     <CardContent className="pt-6 text-center">
                       <Mail className="h-8 w-8 text-primary mb-3 mx-auto" />
-                      <h4 className="font-semibold mb-2">General Inquiries</h4>
-                      <a 
-                        href="mailto:hello@flowbills.ca" 
-                        className="text-sm text-primary hover:underline"
-                      >
+                      <h4 className="font-semibold mb-2">{t('contact.generalInquiries')}</h4>
+                      <a href="mailto:hello@flowbills.ca" className="text-sm text-primary hover:underline">
                         hello@flowbills.ca
                       </a>
                     </CardContent>
                   </Card>
-
                   <Card>
                     <CardContent className="pt-6 text-center">
                       <MessageSquare className="h-8 w-8 text-primary mb-3 mx-auto" />
-                      <h4 className="font-semibold mb-2">Technical Support</h4>
-                      <a 
-                        href="mailto:support@flowbills.ca" 
-                        className="text-sm text-primary hover:underline"
-                      >
+                      <h4 className="font-semibold mb-2">{t('contact.technicalSupport')}</h4>
+                      <a href="mailto:support@flowbills.ca" className="text-sm text-primary hover:underline">
                         support@flowbills.ca
                       </a>
                     </CardContent>
                   </Card>
-
                   <Card>
                     <CardContent className="pt-6 text-center">
                       <Phone className="h-8 w-8 text-primary mb-3 mx-auto" />
-                      <h4 className="font-semibold mb-2">Sales Team</h4>
-                      <a 
-                        href="mailto:sales@flowbills.ca" 
-                        className="text-sm text-primary hover:underline"
-                      >
+                      <h4 className="font-semibold mb-2">{t('contact.salesTeam')}</h4>
+                      <a href="mailto:sales@flowbills.ca" className="text-sm text-primary hover:underline">
                         sales@flowbills.ca
                       </a>
                     </CardContent>
@@ -162,8 +142,7 @@ export default function Contact() {
                   <p className="flex items-start gap-2">
                     <CheckCircle2 className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
                     <span>
-                      <strong>CASL Compliant:</strong> We only send commercial electronic messages with your explicit consent. 
-                      You can unsubscribe at any time.
+                      <strong>CASL:</strong> {t('contact.caslNotice')}
                     </span>
                   </p>
                 </div>
@@ -174,52 +153,39 @@ export default function Contact() {
                   <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-4">
                     <Phone className="h-8 w-8 text-primary" />
                   </div>
-                  <h3 className="text-2xl font-bold mb-2">Phone Support</h3>
+                  <h3 className="text-2xl font-bold mb-2">{t('contact.phoneSupport')}</h3>
                   <p className="text-muted-foreground mb-4">
-                    Speak directly with our support team for urgent matters
+                    {t('contact.phoneSupportDesc')}
                   </p>
                   <div className="flex items-center justify-center gap-4 text-sm">
                     <Badge variant="secondary" className="flex items-center gap-1">
                       <Clock className="h-3 w-3" />
-                      Mon-Fri: 8am-6pm MT
+                      {t('contact.phoneHours')}
                     </Badge>
                   </div>
                 </div>
 
                 <div className="bg-muted/50 rounded-lg p-6 text-center space-y-4">
                   <div>
-                    <p className="text-sm text-muted-foreground mb-2">Call us toll-free</p>
-                    <a 
-                      href="tel:1-800-FLOWBILL" 
-                      className="text-3xl font-bold text-primary hover:underline"
-                    >
+                    <p className="text-sm text-muted-foreground mb-2">{t('contact.callTollFree')}</p>
+                    <a href="tel:1-800-FLOWBILL" className="text-3xl font-bold text-primary hover:underline">
                       1-800-FLOWBILL
                     </a>
                   </div>
                   <p className="text-sm text-muted-foreground">
-                    For after-hours emergencies, our AI chat support is available 24/7
+                    {t('contact.afterHours')}
                   </p>
                 </div>
 
                 <div className="bg-muted/50 rounded-lg p-6 space-y-4">
-                  <h4 className="font-semibold">When to call:</h4>
+                  <h4 className="font-semibold">{t('contact.whenToCall')}</h4>
                   <ul className="space-y-2 text-sm text-muted-foreground">
-                    <li className="flex items-start gap-2">
-                      <CheckCircle2 className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
-                      <span>Critical system issues requiring immediate attention</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <CheckCircle2 className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
-                      <span>Complex technical problems needing guided support</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <CheckCircle2 className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
-                      <span>Account security concerns or access issues</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <CheckCircle2 className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
-                      <span>Enterprise consultation and custom solutions</span>
-                    </li>
+                    {[1,2,3,4].map(i => (
+                      <li key={i} className="flex items-start gap-2">
+                        <CheckCircle2 className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
+                        <span>{t(`contact.callReason${i}`)}</span>
+                      </li>
+                    ))}
                   </ul>
                 </div>
               </TabsContent>
@@ -230,45 +196,40 @@ export default function Contact() {
         <section className="max-w-2xl mx-auto">
           <Card>
             <CardContent className="pt-6">
-              <h2 className="text-2xl font-bold mb-4">Send us a message</h2>
+              <h2 className="text-2xl font-bold mb-4">{t('contact.sendMessage')}</h2>
               <p className="text-sm text-muted-foreground mb-6">
-                By submitting this form, you consent to receive commercial electronic messages from FlowBills.ca. 
-                You can unsubscribe at any time.
+                {t('contact.consentNotice')}
               </p>
               
               {!submitted ? (
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div>
-                    <label className="text-sm font-medium mb-2 block">Your Email</label>
+                    <label className="text-sm font-medium mb-2 block">{t('contact.yourEmail')}</label>
                     <Input type="email" required placeholder="you@company.com" />
                   </div>
-                  
                   <div>
-                    <label className="text-sm font-medium mb-2 block">Subject</label>
-                    <Input required placeholder="How can we help?" />
+                    <label className="text-sm font-medium mb-2 block">{t('contact.subject')}</label>
+                    <Input required placeholder={t('contact.subjectPlaceholder')} />
                   </div>
-                  
                   <div>
-                    <label className="text-sm font-medium mb-2 block">Message</label>
-                    <Textarea required placeholder="Tell us about your AP processing needs..." rows={6} />
+                    <label className="text-sm font-medium mb-2 block">{t('contact.message')}</label>
+                    <Textarea required placeholder={t('contact.messagePlaceholder')} rows={6} />
                   </div>
-                  
-                  <Button type="submit" className="w-full">Send Message</Button>
+                  <Button type="submit" className="w-full">{t('contact.sendButton')}</Button>
                 </form>
               ) : (
                 <div className="text-center py-12">
                   <div className="h-16 w-16 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center mx-auto mb-4">
                     <Mail className="h-8 w-8 text-green-600 dark:text-green-400" />
                   </div>
-                  <h3 className="text-xl font-semibold mb-2">Message Sent!</h3>
-                  <p className="text-muted-foreground">We'll get back to you within 1 business day.</p>
+                  <h3 className="text-xl font-semibold mb-2">{t('contact.messageSent')}</h3>
+                  <p className="text-muted-foreground">{t('contact.messageResponse')}</p>
                 </div>
               )}
             </CardContent>
           </Card>
         </section>
       </main>
-      <Footer />
       <SupportChat 
         isMinimized={isChatMinimized} 
         onMinimize={() => setIsChatMinimized(!isChatMinimized)} 

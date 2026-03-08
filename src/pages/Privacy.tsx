@@ -8,24 +8,6 @@ const Privacy = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <div className="flex items-center gap-2">
-            <FileText className="h-8 w-8 text-primary" />
-            <span className="text-2xl font-bold text-foreground">FlowBills.ca</span>
-          </div>
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" onClick={() => navigate('/')}>
-              Home
-            </Button>
-            <Button onClick={() => navigate('/auth')}>
-              Sign In
-            </Button>
-          </div>
-        </div>
-      </header>
-
       <div className="container mx-auto px-4 py-12 max-w-6xl">
         {/* Header Section */}
         <div className="text-center mb-12">
