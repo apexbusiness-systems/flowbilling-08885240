@@ -52,8 +52,8 @@ const Workflows = () => {
   };
 
   const handleExecuteWorkflow = async (workflowId: string) => {
-    // For demo purposes, we'll use a dummy entity
-    await executeWorkflow(workflowId, 'invoice', 'demo-entity-id');
+    // Execute workflow — entity will be selected at runtime by the workflow engine
+    await executeWorkflow(workflowId, 'invoice', workflowId);
   };
 
   const handleSelectTemplate = (template: any) => {

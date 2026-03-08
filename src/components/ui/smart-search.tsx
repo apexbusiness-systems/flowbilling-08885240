@@ -1,8 +1,9 @@
-import { useState, useEffect, useRef } from "react";
-import { Search, X, Clock, TrendingUp } from "lucide-react";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { Search, X, Clock } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
 
 interface SearchResult {
   id: string;
@@ -28,64 +29,110 @@ const SmartSearch = ({
   const [query, setQuery] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const [results, setResults] = useState<SearchResult[]>([]);
-  const [recentSearches, setRecentSearches] = useState<string[]>([
-    "Invoice INV-2024-0847",
-    "Husky Energy",
-    "PO matching errors"
-  ]);
+  const [loading, setLoading] = useState(false);
+  const [recentSearches, setRecentSearches] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem('flowbills_recent_searches');
+      return saved ? JSON.parse(saved) : [];
+    } catch { return []; }
+  });
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Mock search results for demo
-  const mockResults: SearchResult[] = [
-    {
-      id: "1",
-      title: "Invoice INV-2024-0847",
-      type: "Invoice",
-      description: "Husky Energy - $45,250.00 - PO mismatch",
-      url: "/invoices/INV-2024-0847"
-    },
-    {
-      id: "2", 
-      title: "Validation Rule: PO Required",
-      type: "Rule",
-      description: "Error-level validation for PO number field",
-      url: "/validation"
-    },
-    {
-      id: "3",
-      title: "Suncor Energy",
-      type: "Vendor",
-      description: "Active vendor - 23 pending invoices",
-      url: "/vendors/suncor"
+  const searchDatabase = useCallback(async (searchQuery: string) => {
+    if (searchQuery.length < 2) {
+      setResults([]);
+      return;
     }
-  ];
+
+    setLoading(true);
+    try {
+      const searchTerm = `%${searchQuery}%`;
+
+      // Search invoices, AFEs, and UWIs in parallel
+      const [invoicesRes, afesRes, uwisRes] = await Promise.all([
+        supabase
+          .from('invoices')
+          .select('id, invoice_number, vendor_name, amount, status')
+          .or(`invoice_number.ilike.${searchTerm},vendor_name.ilike.${searchTerm}`)
+          .limit(5),
+        supabase
+          .from('afes')
+          .select('id, afe_number, well_name, budget_amount, status')
+          .or(`afe_number.ilike.${searchTerm},well_name.ilike.${searchTerm}`)
+          .limit(3),
+        supabase
+          .from('uwis')
+          .select('id, uwi, well_name, operator, status')
+          .or(`uwi.ilike.${searchTerm},well_name.ilike.${searchTerm}`)
+          .limit(3),
+      ]);
+
+      const searchResults: SearchResult[] = [];
+
+      if (invoicesRes.data) {
+        for (const inv of invoicesRes.data) {
+          searchResults.push({
+            id: inv.id,
+            title: `Invoice ${inv.invoice_number}`,
+            type: 'Invoice',
+            description: `${inv.vendor_name} — $${Number(inv.amount).toLocaleString()} — ${inv.status}`,
+            url: '/invoices',
+          });
+        }
+      }
+
+      if (afesRes.data) {
+        for (const afe of afesRes.data) {
+          searchResults.push({
+            id: afe.id,
+            title: `AFE ${afe.afe_number}`,
+            type: 'AFE',
+            description: `${afe.well_name || 'No well'} — Budget: $${Number(afe.budget_amount).toLocaleString()}`,
+            url: '/afe-management',
+          });
+        }
+      }
+
+      if (uwisRes.data) {
+        for (const uwi of uwisRes.data) {
+          searchResults.push({
+            id: uwi.id,
+            title: `UWI ${uwi.uwi}`,
+            type: 'Well',
+            description: `${uwi.well_name || uwi.operator || 'Unknown'} — ${uwi.status}`,
+            url: '/uwi-registry',
+          });
+        }
+      }
+
+      setResults(searchResults);
+    } catch (error) {
+      console.error('Search error:', error);
+      setResults([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    if (query.length > 2) {
-      // Simulate API search delay
+    if (query.length > 1) {
       const timer = setTimeout(() => {
-        setResults(mockResults.filter(r => 
-          r.title.toLowerCase().includes(query.toLowerCase()) ||
-          r.description.toLowerCase().includes(query.toLowerCase())
-        ));
+        searchDatabase(query);
         setIsOpen(true);
       }, 300);
-      
       return () => clearTimeout(timer);
     } else {
       setResults([]);
-      setIsOpen(false);
+      if (query.length === 0) setIsOpen(false);
     }
-  }, [query]);
+  }, [query, searchDatabase]);
 
   const handleSearch = (searchQuery: string) => {
     if (searchQuery.trim()) {
       onSearch?.(searchQuery);
-      // Add to recent searches
-      setRecentSearches(prev => [
-        searchQuery,
-        ...prev.filter(s => s !== searchQuery).slice(0, 4)
-      ]);
+      const updated = [searchQuery, ...recentSearches.filter(s => s !== searchQuery).slice(0, 4)];
+      setRecentSearches(updated);
+      try { localStorage.setItem('flowbills_recent_searches', JSON.stringify(updated)); } catch {}
       setIsOpen(false);
     }
   };
@@ -112,12 +159,8 @@ const SmartSearch = ({
           onChange={(e) => setQuery(e.target.value)}
           onFocus={() => setIsOpen(true)}
           onKeyDown={(e) => {
-            if (e.key === "Enter") {
-              handleSearch(query);
-            }
-            if (e.key === "Escape") {
-              setIsOpen(false);
-            }
+            if (e.key === "Enter") handleSearch(query);
+            if (e.key === "Escape") setIsOpen(false);
           }}
           placeholder={placeholder}
           className="pl-10 pr-10"
@@ -136,10 +179,15 @@ const SmartSearch = ({
         )}
       </div>
 
-      {/* Search Dropdown */}
       {isOpen && (
         <div className="absolute top-full left-0 right-0 mt-2 bg-popover border border-border rounded-lg shadow-lg z-50 animate-fade-in">
-          {results.length > 0 && (
+          {loading && (
+            <div className="p-4 text-center text-muted-foreground text-sm">
+              Searching...
+            </div>
+          )}
+
+          {!loading && results.length > 0 && (
             <div className="p-2">
               <div className="text-xs font-medium text-muted-foreground mb-2 px-2">
                 Search Results
@@ -168,7 +216,7 @@ const SmartSearch = ({
             </div>
           )}
 
-          {query.length <= 2 && recentSearches.length > 0 && (
+          {!loading && query.length <= 1 && recentSearches.length > 0 && (
             <div className="p-2">
               <div className="text-xs font-medium text-muted-foreground mb-2 px-2 flex items-center gap-2">
                 <Clock className="h-3 w-3" />
@@ -189,7 +237,7 @@ const SmartSearch = ({
             </div>
           )}
 
-          {query.length > 2 && results.length === 0 && (
+          {!loading && query.length > 1 && results.length === 0 && (
             <div className="p-4 text-center text-muted-foreground text-sm">
               No results found for "{query}"
             </div>
