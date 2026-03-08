@@ -207,7 +207,7 @@ export default function Pricing() {
                   <span className="text-muted-foreground">{t('pricing.perMonth')}</span>
                 </div>
                 <p className="text-sm text-muted-foreground mt-2">
-                  {String(t('pricing.includesUpTo', { count: PRICING_PLANS.GROWTH.included_invoices.toLocaleString() }))}
+                  {t('pricing.includesUpTo', { count: PRICING_PLANS.GROWTH.included_invoices.toLocaleString(), defaultValue: 'Includes up to {{count}} invoices/month' })}
                 </p>
                 <p className="text-sm text-muted-foreground">
                   {String(t('pricing.perAdditional', { price: formatCurrency(PRICING_PLANS.GROWTH.overage_price_per_invoice_cents) }))}
