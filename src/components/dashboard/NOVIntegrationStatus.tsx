@@ -109,7 +109,7 @@ const NOVIntegrationStatus = () => {
                     {integration.integration_type}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    {integration.config?.description || 'Integration description'}
+                    {(integration.config as Record<string, string>)?.description || 'Integration description'}
                   </p>
                 </div>
               </div>
