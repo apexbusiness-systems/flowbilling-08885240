@@ -166,7 +166,7 @@ export default function Pricing() {
                   {t('pricing.includesUpTo', { count: PRICING_PLANS.STARTER.included_invoices.toLocaleString(), defaultValue: 'Includes up to {{count}} invoices/month' })}
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  {String(t('pricing.perAdditional', { price: formatCurrency(PRICING_PLANS.STARTER.overage_price_per_invoice_cents) }))}
+                  {t('pricing.perAdditional', { price: formatCurrency(PRICING_PLANS.STARTER.overage_price_per_invoice_cents), defaultValue: '{{price}} per additional invoice' })}
                 </p>
               </div>
             </CardHeader>
