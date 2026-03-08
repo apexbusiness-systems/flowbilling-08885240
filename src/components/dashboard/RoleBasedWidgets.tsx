@@ -1,8 +1,10 @@
 import { memo } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { useDashboardStats } from '@/hooks/useDashboardStats';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
 import { 
   Shield, 
   Users, 
@@ -23,6 +25,24 @@ import { cn } from '@/lib/utils';
 interface RoleBasedWidgetsProps {
   className?: string;
 }
+
+interface OperatorWidgetProps {
+  pendingApprovals: number;
+  activeRules: number;
+  processingErrors: number;
+  loading: boolean;
+}
+
+interface ViewerWidgetProps {
+  monthlyInvoices: number;
+  budgetUtilization: number;
+  loading: boolean;
+}
+
+const StatValue = ({ value, loading }: { value: number | string; loading: boolean }) => {
+  if (loading) return <Skeleton className="h-8 w-16" />;
+  return <div className="text-2xl font-bold">{value}</div>;
+};
 
 // Admin-only widgets
 const AdminWidgets = memo(() => {
@@ -72,10 +92,10 @@ const AdminWidgets = memo(() => {
         </CardContent>
       </Card>
 
-      <Card className="border-warning/20 bg-warning/5">
+      <Card className="border-muted-foreground/20 bg-muted/30">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">System Configuration</CardTitle>
-          <Settings className="h-4 w-4 text-warning" />
+          <Settings className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold">Active</div>
@@ -106,7 +126,7 @@ const AdminWidgets = memo(() => {
 AdminWidgets.displayName = 'AdminWidgets';
 
 // Operator-only widgets
-const OperatorWidgets = memo(() => {
+const OperatorWidgets = memo(({ pendingApprovals, activeRules, processingErrors, loading }: OperatorWidgetProps) => {
   const navigate = useNavigate();
   
   return (
@@ -114,10 +134,10 @@ const OperatorWidgets = memo(() => {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Pending Approvals</CardTitle>
-          <Clock className="h-4 w-4 text-warning" />
+          <Clock className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">12</div>
+          <StatValue value={pendingApprovals} loading={loading} />
           <p className="text-xs text-muted-foreground">
             Awaiting your review
           </p>
@@ -138,7 +158,7 @@ const OperatorWidgets = memo(() => {
           <CheckCircle2 className="h-4 w-4 text-green-500" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">24</div>
+          <StatValue value={activeRules} loading={loading} />
           <p className="text-xs text-muted-foreground">
             Active rules configured
           </p>
@@ -159,7 +179,13 @@ const OperatorWidgets = memo(() => {
           <XCircle className="h-4 w-4 text-destructive" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold text-destructive">3</div>
+          {loading ? (
+            <Skeleton className="h-8 w-16" />
+          ) : (
+            <div className={cn("text-2xl font-bold", processingErrors > 0 && "text-destructive")}>
+              {processingErrors}
+            </div>
+          )}
           <p className="text-xs text-muted-foreground">
             Require attention
           </p>
@@ -200,7 +226,7 @@ const OperatorWidgets = memo(() => {
 OperatorWidgets.displayName = 'OperatorWidgets';
 
 // Viewer-only widgets (read-only summaries)
-const ViewerWidgets = memo(() => {
+const ViewerWidgets = memo(({ monthlyInvoices, budgetUtilization, loading }: ViewerWidgetProps) => {
   const navigate = useNavigate();
   
   return (
@@ -211,7 +237,7 @@ const ViewerWidgets = memo(() => {
           <FileText className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">156</div>
+          <StatValue value={monthlyInvoices} loading={loading} />
           <p className="text-xs text-muted-foreground">
             Processed this month
           </p>
@@ -232,7 +258,7 @@ const ViewerWidgets = memo(() => {
           <TrendingUp className="h-4 w-4 text-green-500" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">67%</div>
+          <StatValue value={loading ? 0 : `${budgetUtilization}%`} loading={loading} />
           <p className="text-xs text-muted-foreground">
             Of allocated AFE budget
           </p>
@@ -304,6 +330,7 @@ RoleBadge.displayName = 'RoleBadge';
 
 export const RoleBasedWidgets = memo(({ className }: RoleBasedWidgetsProps) => {
   const { userRole, hasRole } = useAuth();
+  const { pendingApprovals, activeRules, processingErrors, monthlyInvoices, budgetUtilization, loading } = useDashboardStats();
 
   return (
     <div className={cn('space-y-6', className)}>
@@ -320,7 +347,7 @@ export const RoleBasedWidgets = memo(({ className }: RoleBasedWidgetsProps) => {
         )}
       </div>
 
-      {/* Admin Section - Only visible to admins */}
+      {/* Admin Section */}
       {hasRole('admin') && (
         <div className="space-y-3">
           <div className="flex items-center gap-2">
@@ -333,7 +360,7 @@ export const RoleBasedWidgets = memo(({ className }: RoleBasedWidgetsProps) => {
         </div>
       )}
 
-      {/* Operator Section - Visible to admins and operators */}
+      {/* Operator Section */}
       {hasRole('operator') && (
         <div className="space-y-3">
           <div className="flex items-center gap-2">
@@ -342,11 +369,16 @@ export const RoleBasedWidgets = memo(({ className }: RoleBasedWidgetsProps) => {
               Operations Management
             </h3>
           </div>
-          <OperatorWidgets />
+          <OperatorWidgets
+            pendingApprovals={pendingApprovals}
+            activeRules={activeRules}
+            processingErrors={processingErrors}
+            loading={loading}
+          />
         </div>
       )}
 
-      {/* Viewer Section - Visible to all authenticated users */}
+      {/* Viewer Section */}
       {hasRole('viewer') && (
         <div className="space-y-3">
           <div className="flex items-center gap-2">
@@ -355,15 +387,19 @@ export const RoleBasedWidgets = memo(({ className }: RoleBasedWidgetsProps) => {
               Overview & Reports
             </h3>
           </div>
-          <ViewerWidgets />
+          <ViewerWidgets
+            monthlyInvoices={monthlyInvoices}
+            budgetUtilization={budgetUtilization}
+            loading={loading}
+          />
         </div>
       )}
 
       {/* Fallback for users without roles */}
       {!userRole && (
-        <Card className="border-warning/50 bg-warning/10">
+        <Card className="border-destructive/20 bg-destructive/5">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-warning">
+            <CardTitle className="flex items-center gap-2 text-destructive">
               <AlertTriangle className="h-5 w-5" />
               Limited Access
             </CardTitle>
