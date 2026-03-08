@@ -11,12 +11,6 @@ node_modules
 dist
 dist-ssr
 *.local
-.env
-
-# Test artifacts
-test-results/
-playwright-report/
-test_output*.txt
 
 # Editor directories and files
 .vscode/*
@@ -28,4 +22,3 @@ test_output*.txt
 *.njsproj
 *.sln
 *.sw?
-coverage/

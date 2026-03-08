@@ -1,9 +1,8 @@
-const CACHE_NAME = 'flowbills-v11';
-const STATIC_ASSETS = [
-  '/favicon.png',
-  '/manifest.webmanifest',
-  '/icons/icon-192x192.png',
-  '/icons/icon-512x512.png'
+const CACHE_NAME = 'flowbills-v10'; // P0 fix - disable caching entirely until strategy is refined
+const urlsToCache = [
+  // TEMPORARILY EMPTY - do not cache anything
+  // Previous caching was causing "Application Loading Error" in production
+  // by serving stale bundles after deployments
 ];
 
 // Install Service Worker - SKIP WAITING IMMEDIATELY
@@ -16,7 +15,7 @@ self.addEventListener('install', (event) => {
     caches.open(CACHE_NAME)
       .then((cache) => {
         console.log('Opened cache');
-        return cache.addAll(STATIC_ASSETS);
+        return cache.addAll(urlsToCache);
       })
       .catch((error) => {
         console.error('Failed to cache resources:', error);
@@ -25,25 +24,7 @@ self.addEventListener('install', (event) => {
   );
 });
 
-// Activate Service Worker - delete only old FlowBills cache versions
-self.addEventListener('activate', (event) => {
-  console.log('FlowBills Service Worker activating - clearing stale FlowBills caches...');
-  event.waitUntil(
-    caches.keys().then((cacheNames) => {
-      return Promise.all(cacheNames
-        .filter((cacheName) => cacheName.startsWith('flowbills-') && cacheName !== CACHE_NAME)
-        .map((cacheName) => {
-          console.log('Deleting stale cache:', cacheName);
-          return caches.delete(cacheName);
-        }));
-    }).then(() => {
-      // Take control of all clients immediately
-      return self.clients.claim();
-    })
-  );
-});
-
-// Fetch Event - Refined Strategy
+// Fetch Event - NETWORK ONLY for critical assets
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
@@ -56,68 +37,67 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // 1. Navigation (HTML) - Network First
-  // Always try to fetch the latest index.html to ensure we get new asset references
-  if (request.mode === 'navigate' || request.destination === 'document') {
+  // NETWORK ONLY for HTML - never cache index.html to avoid stale app
+  if (request.destination === 'document' || request.headers.get('accept')?.includes('text/html')) {
+    event.respondWith(fetch(request));
+    return;
+  }
+
+  // NETWORK ONLY for JavaScript bundles - never cache app code
+  if (request.destination === 'script') {
+    event.respondWith(fetch(request));
+    return;
+  }
+
+  // NETWORK ONLY for CSS bundles - never cache styles
+  if (request.destination === 'style') {
+    event.respondWith(fetch(request));
+    return;
+  }
+
+  // Network-first for images and static assets (with cache fallback)
+  if (request.destination === 'image' || url.pathname.startsWith('/icons/')) {
     event.respondWith(
       fetch(request)
         .then((response) => {
-          // If network success, clone and cache
           const responseClone = response.clone();
           caches.open(CACHE_NAME).then((cache) => cache.put(request, responseClone));
           return response;
         })
-        .catch(() => {
-          // If network fails (offline), return cached version
-          return caches.match(request);
-        })
+        .catch(() => caches.match(request))
     );
     return;
   }
 
-  // 2. Hashed Assets (JS/CSS/Images with hash) - Cache First (Immutable)
-  // Vite generates assets with hashes like assets/index-1234.js
-  // These are safe to cache aggressively because the filename changes if content changes
-  if (url.pathname.startsWith('/assets/') && /-[a-zA-Z0-9]{8,}\./.test(url.pathname)) {
-    event.respondWith(
-      caches.match(request).then((cachedResponse) => {
-        if (cachedResponse) {
-          return cachedResponse;
+  // Default: network-first for everything else
+  event.respondWith(
+    fetch(request)
+      .then((response) => {
+        if (response && response.status === 200 && response.type === 'basic') {
+          const responseToCache = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(request, responseToCache));
         }
-        return fetch(request).then((response) => {
-          // Cache only valid responses
-          if (response && response.status === 200 && response.type === 'basic') {
-            const responseClone = response.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(request, responseClone));
-          }
-          return response;
-        });
+        return response;
       })
-    );
-    return;
-  }
+      .catch(() => caches.match(request))
+  );
+});
 
-  // 3. Static Assets (Icons, Manifest) - Stale While Revalidate
-  // Serve from cache immediately, but update cache in background
-  if (STATIC_ASSETS.includes(url.pathname) || url.pathname.startsWith('/icons/')) {
-    event.respondWith(
-      caches.match(request).then((cachedResponse) => {
-        const fetchPromise = fetch(request).then((networkResponse) => {
-          if (networkResponse && networkResponse.status === 200 && networkResponse.type === 'basic') {
-            const responseClone = networkResponse.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(request, responseClone));
-          }
-          return networkResponse;
-        });
-        return cachedResponse || fetchPromise;
-      })
-    );
-    return;
-  }
-
-  // 4. Everything Else (API, etc) - Network Only
-  // Do not cache API responses or dynamic content by default
-  // Just let the browser handle it naturally (fetch)
+// Activate Service Worker - Delete ALL old caches for clean state
+self.addEventListener('activate', (event) => {
+  console.log('FlowBills Service Worker activating - clearing all old caches...');
+  event.waitUntil(
+    caches.keys().then((cacheNames) => {
+      // Delete ALL caches (including old versions)
+      return Promise.all(cacheNames.map((cacheName) => {
+        console.log('Deleting cache:', cacheName);
+        return caches.delete(cacheName);
+      }));
+    }).then(() => {
+      // Take control of all clients immediately
+      return self.clients.claim();
+    })
+  );
 });
 
 // Handle messages from the main thread

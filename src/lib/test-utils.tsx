@@ -13,7 +13,6 @@ Object.defineProperty(window, 'matchMedia', {
   })),
 });
 
-import { vi } from 'vitest';
 import React, { ReactElement } from 'react';
 import { render, RenderOptions, renderHook as rtlRenderHook } from '@testing-library/react';
 import { screen, waitFor } from '@testing-library/dom';
@@ -22,6 +21,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { AuthProvider } from '@/hooks/useAuth';
+import { vi } from 'vitest';
 import '@testing-library/jest-dom';
 
 // Polyfill ResizeObserver for components that rely on it (e.g., Radix UI)

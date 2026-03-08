@@ -1,14 +1,12 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2';
-import { z } from "zod";
 import { toMessage } from "../_shared/errors.ts";
 import { corsHeaders } from '../_shared/cors.ts';
 
-// Validation Schema
-const OCRRequestSchema = z.object({
-  file_data: z.string().min(1, "File data is required"),
-  file_type: z.string().min(1, "File type is required"),
-  invoice_id: z.string().uuid("Invalid invoice_id format").optional(),
-});
+interface OCRRequest {
+  file_data: string; // base64 encoded file or data URL
+  file_type: string;
+  invoice_id?: string;
+}
 
 interface ExtractedFields {
   invoice_number: string | null;
@@ -51,22 +49,7 @@ Deno.serve(async (req) => {
   const startTime = Date.now();
 
   try {
-    // 1. Validation
-    const body = await req.json();
-    const parseResult = OCRRequestSchema.safeParse(body);
-
-    if (!parseResult.success) {
-      return new Response(JSON.stringify({
-        success: false,
-        error: 'Validation failed',
-        details: parseResult.error.issues
-      }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    const { file_data, file_type, invoice_id } = parseResult.data;
+    const { file_data, file_type, invoice_id }: OCRRequest = await req.json();
     
     console.log(`[OCR] Processing ${file_type} document${invoice_id ? ` for invoice ${invoice_id}` : ''}`);
 
@@ -74,15 +57,16 @@ Deno.serve(async (req) => {
       throw new Error('LOVABLE_API_KEY not configured');
     }
 
-    // 2. Prepare Image URL
+    // Prepare image URL for vision model
     let imageUrl = file_data;
     if (!file_data.startsWith('data:')) {
+      // Add data URL prefix if not present
       const mimeType = file_type.includes('pdf') ? 'application/pdf' : 
                        file_type.includes('png') ? 'image/png' : 'image/jpeg';
       imageUrl = `data:${mimeType};base64,${file_data}`;
     }
 
-    // 3. AI Extraction Prompt
+    // Use Lovable AI with Gemini vision for OCR
     const extractionPrompt = `You are an expert invoice OCR system for oil & gas industry invoices. Analyze this document image and extract ALL text and structured data.
 
 Extract the following fields (use null if not found):
@@ -160,9 +144,12 @@ Respond in this exact JSON format:
       throw new Error('No response from AI model');
     }
 
-    // 4. Parse AI Response
+    console.log('[OCR] AI response received, parsing...');
+
+    // Parse the JSON response from AI
     let parsed: any;
     try {
+      // Extract JSON from markdown code blocks if present
       const jsonMatch = content.match(/```(?:json)?\s*([\s\S]*?)```/);
       const jsonStr = jsonMatch ? jsonMatch[1].trim() : content.trim();
       parsed = JSON.parse(jsonStr);
@@ -201,7 +188,7 @@ Respond in this exact JSON format:
 
     console.log(`[OCR] Extraction complete in ${processingTime}ms, avg confidence: ${(avgConfidence * 100).toFixed(1)}%`);
 
-    // 5. Update Invoice & Audit Log
+    // Update invoice if invoice_id provided
     if (invoice_id) {
       const supabase = createClient(
         Deno.env.get('SUPABASE_URL') ?? '',
@@ -220,6 +207,7 @@ Respond in this exact JSON format:
         console.error('[OCR] Failed to update invoice:', updateError);
       }
 
+      // Log audit event
       await supabase.from('audit_logs').insert({
         action: 'OCR_EXTRACTION',
         entity_type: 'invoice',

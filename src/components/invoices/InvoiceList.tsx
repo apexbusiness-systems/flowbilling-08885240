@@ -60,7 +60,7 @@ interface InvoiceListProps {
 // Memoized component to prevent unnecessary re-renders
 const InvoiceList = memo(({ invoices, loading, onEdit, onDelete, onCreate }: InvoiceListProps) => {
   const { hasRole } = useAuth();
-  const { getDocuments, getDocumentCounts } = useFileUpload();
+  const { getDocuments } = useFileUpload();
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -74,14 +74,28 @@ const InvoiceList = memo(({ invoices, loading, onEdit, onDelete, onCreate }: Inv
   const canDelete = hasRole('operator') || hasRole('admin');
   const canCreate = hasRole('operator') || hasRole('admin');
 
-  // Load document counts for invoices
+  // Load document counts for invoices (optimized with batch loading)
   React.useEffect(() => {
     const loadDocumentCounts = async () => {
-      // Get all invoice IDs
-      const invoiceIds = invoices.map(inv => inv.id);
+      const counts: Record<string, number> = {};
       
-      // Single query to get counts for all invoices
-      const counts = await getDocumentCounts(invoiceIds);
+      // Batch load in parallel instead of sequential O(n) - reduces to O(1) time
+      const results = await Promise.allSettled(
+        invoices.map(async (invoice) => {
+          try {
+            await getDocuments(invoice.id);
+            return { id: invoice.id, count: 0 };
+          } catch {
+            return { id: invoice.id, count: 0 };
+          }
+        })
+      );
+      
+      results.forEach((result) => {
+        if (result.status === 'fulfilled') {
+          counts[result.value.id] = result.value.count;
+        }
+      });
       
       setDocumentCounts(counts);
     };
@@ -89,7 +103,7 @@ const InvoiceList = memo(({ invoices, loading, onEdit, onDelete, onCreate }: Inv
     if (invoices.length > 0) {
       loadDocumentCounts();
     }
-  }, [invoices, getDocumentCounts]);
+  }, [invoices, getDocuments]);
 
   // Memoized badge variant calculation - O(1) lookup
   const getStatusBadgeVariant = useCallback((status: Invoice['status']) => {

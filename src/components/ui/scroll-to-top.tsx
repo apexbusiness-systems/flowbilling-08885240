@@ -38,7 +38,6 @@ export const ScrollToTop = () => {
       )}
       aria-label="Scroll to top"
       aria-hidden={!isVisible}
-      tabIndex={isVisible ? 0 : -1}
     >
       <ArrowUp className="h-5 w-5" aria-hidden="true" />
     </Button>

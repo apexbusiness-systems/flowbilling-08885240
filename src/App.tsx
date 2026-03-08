@@ -7,6 +7,7 @@ import { queryClient } from "@/lib/api-client";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { TourProvider } from "@/hooks/useTour";
+import { TourOverlay } from "@/components/tour/TourOverlay";
 import { CSRFProvider } from "@/hooks/useCSRFProtection";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { SecurityHeaders } from "@/components/security/SecurityHeaders";
@@ -14,6 +15,8 @@ import ErrorBoundary from "@/components/error-boundary/ErrorBoundary";
 import { healthChecker } from "@/lib/health-check";
 import { Footer } from "@/components/ui/footer";
 import { OfflineIndicator } from "@/components/ui/offline-indicator";
+import { CommandPalette } from "@/components/ui/command-palette";
+import { InstallPrompt } from "@/components/pwa/InstallPrompt";
 import { PublicHeader } from "@/components/ui/public-header";
 import { ScrollToTop } from "@/components/ui/scroll-to-top";
 import { MobileBottomNav } from "@/components/ui/mobile-bottom-nav";
@@ -54,11 +57,6 @@ const PerformanceMonitoring = React.lazy(() => import("./pages/PerformanceMonito
 const Invoices = React.lazy(() => import("./pages/Invoices"));
 const ExtractionTest = React.lazy(() => import("./pages/ExtractionTest"));
 const UserRoleManagement = React.lazy(() => import("./pages/UserRoleManagement"));
-
-// Lazy load components to reduce initial bundle size
-const CommandPalette = React.lazy(() => import("@/components/ui/command-palette").then(module => ({ default: module.CommandPalette })));
-const InstallPrompt = React.lazy(() => import("@/components/pwa/InstallPrompt").then(module => ({ default: module.InstallPrompt })));
-const TourOverlay = React.lazy(() => import("@/components/tour/TourOverlay").then(module => ({ default: module.TourOverlay })));
 
 // QueryClient is now imported from @/lib/api-client to ensure single instance
 
@@ -322,18 +320,12 @@ function App() {
               <Toaster />
               <Sonner />
               <OfflineIndicator />
-              <React.Suspense fallback={null}>
-                <InstallPrompt />
-              </React.Suspense>
+              <InstallPrompt />
               <BrowserRouter>
-                <React.Suspense fallback={null}>
-                  <CommandPalette />
-                </React.Suspense>
+                <CommandPalette />
                 <AuthProvider>
                   <TourProvider>
-                    <React.Suspense fallback={null}>
-                      <TourOverlay />
-                    </React.Suspense>
+                    <TourOverlay />
                     <CSRFProvider>
                       <AppLayout />
                     </CSRFProvider>

@@ -1,11 +1,10 @@
+import { createClient } from "jsr:@supabase/supabase-js@2"
 import { corsHeaders } from '../_shared/cors.ts'
-import { assertTenantAccess, createServiceClient, createUserClient, getTokenFromRequest, getUserFromJwt } from '../_shared/tenantShield.ts';
 import { z } from "https://deno.land/x/zod@v3.23.8/mod.ts";
 
 // Input validation schema
 const SendRequestSchema = z.object({
   document_id: z.string().min(1, "Document ID is required"),
-  tenant_id: z.string().uuid("Tenant ID must be a UUID"),
   sender_participant_id: z.string().min(1, "Sender participant ID is required"),
   receiver_participant_id: z.string().min(1, "Receiver participant ID is required"),
   document_type_id: z.string().optional().default("urn:oasis:names:specification:ubl:schema:xsd:Invoice-2"),
@@ -105,15 +104,10 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const token = getTokenFromRequest(req);
-    if (!token) {
-      return new Response(JSON.stringify({ error: 'Authorization header required' }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    const user = await getUserFromJwt(token);
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
 
     // Parse and validate request
     const body = await req.json();
@@ -132,12 +126,8 @@ Deno.serve(async (req) => {
       );
     }
 
-    const { document_id, tenant_id, sender_participant_id, receiver_participant_id, document_type_id, process_id } = parsed.data;
-    const tenantId = tenant_id;
-    assertTenantAccess(tenantId, { request: req, userId: user.id });
-
-    const supabase = createUserClient(token);
-    const serviceSupabase = createServiceClient();
+    const { document_id, sender_participant_id, receiver_participant_id, document_type_id, process_id } = parsed.data;
+    const tenantId = body.tenant_id || 'system';
 
     // Check if document is validated
     const { data: document, error: docError } = await supabase
@@ -254,7 +244,7 @@ Deno.serve(async (req) => {
       });
     } else {
       // Enqueue for retry with exponential backoff
-      const jobId = await enqueueMessage(serviceSupabase, {
+      const jobId = await enqueueMessage(supabase, {
         message_id: messageId,
         envelope,
         tenant_id: tenantId,
@@ -271,7 +261,7 @@ Deno.serve(async (req) => {
         .eq('id', peppolMessage.id);
 
       // Increment failure metrics
-      await serviceSupabase.from('model_stats').insert({
+      await supabase.from('model_stats').insert({
         tenant_id: tenantId,
         model: 'peppol_sender',
         stage: 'send',
@@ -296,13 +286,6 @@ Deno.serve(async (req) => {
 
   } catch (error) {
     console.error('E-Invoice send error:', error);
-    if (error instanceof Error && (error.message === 'Forbidden' || error.message === 'Unauthorized')) {
-      return new Response(JSON.stringify({ error: error.message }), {
-        status: error.message === 'Forbidden' ? 403 : 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
     return new Response(JSON.stringify({ 
       error: 'Send processing failed',
       message: error instanceof Error ? error.message : 'Unknown error'

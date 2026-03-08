@@ -9,8 +9,6 @@
  * - Never blocks app mounting on failures
  */
 
-import { cleanupFlowBillsCaches, registerSW } from '@/lib/sw';
-
 declare global {
   interface Window {
     __FLOWBILLS_BOOT__: {
@@ -119,7 +117,23 @@ class SWHealthManager {
     const tracker = BootTracker.getInstance();
 
     try {
-      await cleanupFlowBillsCaches();
+      // Clean service workers
+      if ('serviceWorker' in navigator) {
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        if (registrations.length > 0) {
+          console.log(`[FlowBills] Cleaning ${registrations.length} service worker(s)...`);
+          await Promise.all(registrations.map(reg => reg.unregister()));
+        }
+      }
+
+      // Clean caches
+      if ('caches' in window) {
+        const cacheNames = await caches.keys();
+        if (cacheNames.length > 0) {
+          console.log(`[FlowBills] Cleaning ${cacheNames.length} cache(s)...`);
+          await Promise.all(cacheNames.map(name => caches.delete(name)));
+        }
+      }
 
       console.log('[FlowBills] SW/Cache cleanup completed');
     } catch (error) {
@@ -136,7 +150,10 @@ class SWHealthManager {
     }
 
     try {
-      await registerSW();
+      const registration = await navigator.serviceWorker.register('/sw.js', {
+        scope: '/',
+        updateViaCache: 'none'
+      });
 
       console.log('[FlowBills] Service Worker registered after mount');
     } catch (error) {
@@ -232,7 +249,15 @@ class ChunkRecoveryManager {
     // Clean everything
     await swManager.cleanupInBackground(2000); // Longer timeout for recovery
 
-    await cleanupFlowBillsCaches();
+    // Clear any remaining caches
+    if ('caches' in window) {
+      try {
+        const cacheNames = await caches.keys();
+        await Promise.all(cacheNames.map(name => caches.delete(name)));
+      } catch (error) {
+        console.warn('[FlowBills] Cache cleanup failed during recovery:', error);
+      }
+    }
   }
 
   private showRecoveryUI(errorMessage: string): void {
@@ -650,8 +675,7 @@ function setupGlobalErrorHandlers(tracker: BootTracker): void {
       const longTaskObserver = new PerformanceObserver((list) => {
         list.getEntries().forEach((entry: any) => {
           if (entry.duration > 50) { // Tasks longer than 50ms
-            // Use warn instead of error to avoid failing Lighthouse "errors-in-console" audit
-            console.warn(`[FlowBills] Long task detected: ${entry.duration}ms`);
+            tracker.recordError(`Long task: ${entry.duration}ms`, false);
           }
         });
       });

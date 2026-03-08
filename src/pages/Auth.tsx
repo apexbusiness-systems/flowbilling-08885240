@@ -80,7 +80,6 @@ const Auth = () => {
         setError(error.message);
       }
     } catch (err) {
-      console.error('Google sign in error:', err);
       setError('Failed to sign in with Google');
     } finally {
       setSsoLoading(null);
@@ -102,7 +101,6 @@ const Auth = () => {
         setError(error.message);
       }
     } catch (err) {
-      console.error('Microsoft sign in error:', err);
       setError('Failed to sign in with Microsoft');
     } finally {
       setSsoLoading(null);
@@ -123,7 +121,6 @@ const Auth = () => {
         setError(error.message);
       }
     } catch (err) {
-      console.error('LinkedIn sign in error:', err);
       setError('Failed to sign in with LinkedIn');
     } finally {
       setSsoLoading(null);
@@ -176,8 +173,7 @@ const Auth = () => {
       
       setShowChangePassword(false);
       setPasswordChange({ currentPassword: "", newPassword: "", confirmPassword: "" });
-    } catch (err) {
-      console.error('Password change error:', err);
+    } catch (err: any) {
       setError('An unexpected error occurred. Please try again.');
     } finally {
       setIsLoading(false);
@@ -207,8 +203,7 @@ const Auth = () => {
       
       setShowForgotPassword(false);
       setResetEmail("");
-    } catch (err) {
-      console.error('Password reset error:', err);
+    } catch (err: any) {
       setError('An unexpected error occurred. Please try again.');
     } finally {
       setIsLoading(false);
@@ -243,7 +238,7 @@ const Auth = () => {
       });
       
       navigate("/");
-    } catch (err) {
+    } catch (err: any) {
       console.error("Sign in error:", err);
       setError('An unexpected error occurred. Please try again.');
     } finally {
@@ -294,7 +289,7 @@ const Auth = () => {
       });
       
       navigate("/");
-    } catch (err) {
+    } catch (err: any) {
       console.error("Sign up error:", err);
       setError('An unexpected error occurred. Please try again.');
     } finally {

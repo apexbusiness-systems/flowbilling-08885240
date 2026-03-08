@@ -26,10 +26,19 @@ export const useFileUpload = () => {
   const { user } = useAuth();
   const { toast } = useToast();
 
-  const _uploadFileInternal = useCallback(async (file: File, invoiceId?: string) => {
-    if (!user) return null;
+  const uploadFile = useCallback(async (file: File, invoiceId?: string) => {
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "You must be logged in to upload files",
+        variant: "destructive",
+      });
+      return null;
+    }
 
     try {
+      setUploading(true);
+
       // Generate unique file path
       const timestamp = Date.now();
       const sanitizedFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
@@ -86,26 +95,10 @@ export const useFileUpload = () => {
         variant: "destructive",
       });
       return null;
-    }
-  }, [user, toast]);
-
-  const uploadFile = useCallback(async (file: File, invoiceId?: string) => {
-    if (!user) {
-      toast({
-        title: "Authentication Required",
-        description: "You must be logged in to upload files",
-        variant: "destructive",
-      });
-      return null;
-    }
-
-    setUploading(true);
-    try {
-      return await _uploadFileInternal(file, invoiceId);
     } finally {
       setUploading(false);
     }
-  }, [user, toast, _uploadFileInternal]);
+  }, [user, toast]);
 
   const fetchDocuments = useCallback(async (invoiceId?: string) => {
     if (!user) return;
@@ -195,32 +188,6 @@ export const useFileUpload = () => {
     return fetchDocuments(invoiceId);
   }, [fetchDocuments]);
 
-  const getDocumentCounts = useCallback(async (invoiceIds: string[]) => {
-    if (!user || invoiceIds.length === 0) return {};
-
-    try {
-      const { data, error } = await supabase
-        .from('invoice_documents')
-        .select('invoice_id')
-        .in('invoice_id', invoiceIds);
-
-      if (error) throw error;
-
-      // Count documents per invoice
-      const counts: Record<string, number> = {};
-      data.forEach((doc) => {
-        if (doc.invoice_id) {
-          counts[doc.invoice_id] = (counts[doc.invoice_id] || 0) + 1;
-        }
-      });
-
-      return counts;
-    } catch (error) {
-      console.error('Error fetching document counts:', error);
-      return {};
-    }
-  }, [user]);
-
   const downloadDocument = useCallback(async (documentId: string) => {
     if (!user) return null;
 
@@ -302,52 +269,84 @@ export const useFileUpload = () => {
     if (!user) return [];
 
     setUploading(true);
+    const results: (InvoiceDocument | null)[] = [];
 
     try {
-      // Initialize progress tracking for all files
-      setUploadProgress(prev => [
-        ...prev,
-        ...files.map(file => ({ fileName: file.name, progress: 0 }))
-      ]);
+      for (const file of files) {
+        // Initialize progress tracking
+        setUploadProgress(prev => [...prev, { fileName: file.name, progress: 0 }]);
 
-      const uploadPromises = files.map(async (file) => {
         // Update progress to show start
         setUploadProgress(prev =>
           prev.map(p => p.fileName === file.name ? { ...p, progress: 30 } : p)
         );
 
         // Upload file
-        const result = await _uploadFileInternal(file, invoiceId);
+        const result = await uploadFile(file, invoiceId);
 
         // Update progress to complete
         setUploadProgress(prev =>
           prev.map(p => p.fileName === file.name ? { ...p, progress: 100 } : p)
         );
 
-        return result;
-      });
-
-      const results = await Promise.all(uploadPromises);
+        results.push(result);
+      }
 
       // Clear progress after a short delay
       setTimeout(() => {
         setUploadProgress([]);
       }, 1000);
 
-      return results.filter(Boolean) as InvoiceDocument[];
-
     } catch (error) {
       console.error('Multi-upload error:', error);
-      return [];
     } finally {
       setUploading(false);
     }
-  }, [user, _uploadFileInternal]);
+
+    return results.filter(Boolean) as InvoiceDocument[];
+  }, [user, uploadFile]);
 
   // New function to upload files without invoice association initially
   const uploadFilesWithoutInvoice = useCallback(async (files: File[]) => {
-    return uploadMultipleFiles(files, undefined);
-  }, [uploadMultipleFiles]);
+    if (!user) return [];
+
+    setUploading(true);
+    const results: (InvoiceDocument | null)[] = [];
+
+    try {
+      for (const file of files) {
+        // Initialize progress tracking
+        setUploadProgress(prev => [...prev, { fileName: file.name, progress: 0 }]);
+
+        // Update progress to show start
+        setUploadProgress(prev =>
+          prev.map(p => p.fileName === file.name ? { ...p, progress: 30 } : p)
+        );
+
+        // Upload file without invoice association
+        const result = await uploadFile(file, undefined);
+
+        // Update progress to complete
+        setUploadProgress(prev =>
+          prev.map(p => p.fileName === file.name ? { ...p, progress: 100 } : p)
+        );
+
+        results.push(result);
+      }
+
+      // Clear progress after a short delay
+      setTimeout(() => {
+        setUploadProgress([]);
+      }, 1000);
+
+    } catch (error) {
+      console.error('Multi-upload error:', error);
+    } finally {
+      setUploading(false);
+    }
+
+    return results.filter(Boolean) as InvoiceDocument[];
+  }, [user, uploadFile]);
 
   return {
     uploading,
@@ -361,6 +360,5 @@ export const useFileUpload = () => {
     getFilePreviewUrl,
     uploadMultipleFiles,
     uploadFilesWithoutInvoice,
-    getDocumentCounts,
   };
 };
